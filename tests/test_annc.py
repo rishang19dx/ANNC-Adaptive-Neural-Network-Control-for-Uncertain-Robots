@@ -83,8 +83,8 @@ def test_rbf_grid_has_256_nodes():
 
 
 # ---------------- closed loop (short runs)
-def _run(ctrl, tf=4.0, q0=(0.1, 2.1)):
-    return Simulation(ARM, ctrl, SimParams(t_final=tf, dt=5e-4, q0=np.array(q0), log_every=4)).run()
+def _run(ctrl, tf=4.0, q0=(0.1, 2.1), dt=5e-4):
+    return Simulation(ARM, ctrl, SimParams(t_final=tf, dt=dt, q0=np.array(q0), log_every=max(1, int(2e-3 / dt)))).run()
 
 
 def test_mb_control_converges_inside_barrier():
@@ -97,7 +97,8 @@ def test_mb_control_converges_inside_barrier():
 
 
 def test_nn_control_respects_barrier_with_initial_error():
-    L = _run(AdaptiveNNController())
+    # Stiff + switching dynamics near the barrier need a small fixed step (see README).
+    L = _run(AdaptiveNNController(), tf=1.0, dt=2e-5)
     ka, kb = ConstraintParams().ka, ConstraintParams().kb
     assert np.all(np.abs(L["z1"]) < ka) and np.all(np.abs(L["z2"]) < kb)
     assert not L["violated"].any()

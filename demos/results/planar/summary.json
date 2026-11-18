@@ -1,0 +1,82 @@
+{
+  "args": {
+    "robot": "planar",
+    "controller": "all",
+    "tf": 30.0,
+    "dt": 0.0005,
+    "gui": false,
+    "realtime": false,
+    "record": "demos/media/planar.mp4",
+    "payload": 0.0,
+    "payload_time": 10.0,
+    "q0_offset": [
+      0.0,
+      0.0
+    ],
+    "no_disturbance": false,
+    "seed": 0,
+    "out": null
+  },
+  "results": {
+    "MB": {
+      "max_abs_z1": [
+        0.0001,
+        0.0001
+      ],
+      "max_abs_z2": [
+        0.0,
+        0.0001
+      ],
+      "rms_z1_after_5s": [
+        0.0,
+        0.0001
+      ],
+      "max_abs_tau": [
+        7.1,
+        1.8
+      ],
+      "barrier_respected": true,
+      "t_end": 30.0
+    },
+    "NN": {
+      "max_abs_z1": [
+        0.0046,
+        0.001
+      ],
+      "max_abs_z2": [
+        0.0282,
+        0.0299
+      ],
+      "rms_z1_after_5s": [
+        0.001,
+        0.0004
+      ],
+      "max_abs_tau": [
+        7.4,
+        1.9
+      ],
+      "barrier_respected": true,
+      "t_end": 30.0
+    },
+    "PD": {
+      "max_abs_z1": [
+        0.2643,
+        0.4384
+      ],
+      "max_abs_z2": [
+        1.8584,
+        1.2934
+      ],
+      "rms_z1_after_5s": [
+        0.1252,
+        0.2091
+      ],
+      "max_abs_tau": [
+        10.6,
+        2.3
+      ],
+      "barrier_respected": false,
+      "t_end": 30.0
+    }
+  }
+}

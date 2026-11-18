@@ -5,13 +5,18 @@ Python reproduction of W. He, Y. Chen, Z. Yin, *IEEE Trans. Cybernetics* 46(3):6
 
 ```bash
 python run_simulations.py                      # MB, NN, PD on the paper's setup (30 s, ~1 min)
-python run_simulations.py --q0 0.1 2.1 --out results_offset   # non-zero initial error
+python run_simulations.py --q0 0.1 2.1 --dt 2e-5 --out results_offset   # non-zero initial error (needs small dt)
 python run_simulations.py --cases NN --no-disturbance
 python -m pytest -q tests
+python demos/run_demo.py --robot iiwa --controller NN --payload 2 --gui --realtime   # PyBullet demo
 ```
 
 Outputs per controller in `results/<MB|NN|PD>/` (x1 vs x_d, x2 vs α, z1, z2, τ, NN weight
 norms), `results/comparison_errors.png`, raw logs (`*_log.npz`) and `summary.json`.
+
+![KUKA iiwa: MB vs NN vs PD with a 2 kg payload added at t = 10 s](demos/media/iiwa_MB_NN_PD.gif)
+
+*KUKA LBR iiwa in PyBullet. Left to right: MB, NN, PD. A 2 kg payload is added at t = 10 s (end effector turns red). Green ghost = desired trajectory.*
 
 ## Layout
 
@@ -23,6 +28,9 @@ norms), `results/comparison_errors.png`, raw logs (`*_log.npz`) and `summary.jso
 | `annc/rbf.py` | Gaussian RBF, 256 centres on {−1,1}^8 | §IV-A/B |
 | `annc/controllers.py` | MB control, adaptive NN control + law, PD | (8)–(9), (14), (15), (17), (19) |
 | `annc/simulate.py` | fixed-step RK4, algebraic-loop solve | — |
+| `demos/bullet_arm.py` | PyBullet plant (torque control, locked joints, payload, ghost, video) and nominal model | — |
+| `demos/run_demo.py` | PyBullet demos: paper's arm URDF and KUKA iiwa | — |
+| `demos/planar_2link.urdf` | Table I arm as a URDF | Fig. 1 |
 | `tests/test_annc.py` | Lagrangian consistency, Ṁ−2C skew, pinv, α̇, loop solve, closed loop | — |
 
 ## Equations implemented
@@ -72,4 +80,58 @@ gravity and disturbance compensation (a few Nm).
 * Convergence of z1 is slow on joints with small k1. In (9) the rate is k1·k_a², so it is
   ≈0.14 s⁻¹ for MB joint 2 (k1 = 5) and ≈0.03 s⁻¹ for NN joint 2 (k1 = 1).
 * (z2ᵀ)⁺ is discontinuous at z2 = 0, so the NN control chatters whenever z2 crosses zero (spikes in z2, τ).
-* With this initial error, the NN control briefly exceeds the z2 barrier (abs(z22) ≈ 0.23 > k_b = 0.18 at t ≈ 0.3 s), before the network has learned the gravity term. Whether this is numerical (step size) or inherent to the published law is still being checked.
+* With this initial error the closed loop is very stiff, and (z2ᵀ)⁺ switches whenever z2 crosses zero, so the fixed step must be small. At dt = 5e-4 the NN run briefly exceeds the z2 barrier (abs(z22) ≈ 0.24 > k_b = 0.18 at t ≈ 0.2 s), and at dt = 1e-4 it diverges. At dt = 2e-5 the barrier holds (max abs(z22) = 0.169). The breach is numerical, not a property of the control law. Use `--dt 2e-5` for non-zero initial errors. dt = 5e-4 is fine for the paper's zero-error initial conditions.
+
+## PyBullet demos (`demos/`)
+
+```bash
+python demos/run_demo.py --robot planar --controller NN --gui --realtime
+python demos/run_demo.py --robot iiwa --controller NN --payload 2 --gui --realtime
+python demos/run_demo.py --robot iiwa --controller all --payload 2 --record demos/media/iiwa.mp4
+```
+
+Options: `--payload KG --payload-time S`, `--q0-offset dq1 dq2`, `--no-disturbance`, `--tf`, `--dt`, `--record x.mp4|x.gif`.
+Plots and `summary.json` go to `demos/results/<robot>/`, videos to `demos/media/`.
+
+* **planar**: the paper's arm built as a URDF from Table I. PyBullet's own rigid-body model of
+  it matches eqs. (34)–(37) to 1e-15 (`tests/test_pybullet.py`), so this independently
+  confirms the paper's dynamics.
+* **iiwa**: KUKA LBR iiwa 14 from `pybullet_data`. Joints 2 and 4 (shoulder/elbow pitch, motion
+  in the x–z plane) run the controllers. The other five joints are locked by stiff position
+  servos. The URDF's joint damping (0.5 N·m·s/rad) is real unmodelled friction for MB. The paper's
+  f(t) acts on the end effector. The reference is q_d = [0.5 + 0.4 sin(0.5t), −1 + 0.8 cos(0.5t)].
+  The paper's error bounds are kept (k_a = 0.17, k_b = 0.18). Gains are larger than Table I's
+  for this much heavier arm (see `ROBOTS` in `run_demo.py`).
+* **MB** uses a *separate* PyBullet client as its model, so it never learns about the payload.
+  **NN** has no model at all and starts from Ŵ = 0.
+
+Results, 30 s with disturbance (`demos/results/*/summary.json`):
+
+| robot | controller | max abs(z1) [rad] | RMS z1 after 5 s | barrier respected |
+|---|---|---|---|---|
+| planar | MB | 0.0001, 0.0001 | 0.0000, 0.0001 | yes |
+| planar | NN | 0.0046, 0.0010 | 0.0010, 0.0004 | yes |
+| planar | PD | 0.26, 0.44 | 0.13, 0.21 | **no** |
+| iiwa, +2 kg at 10 s | MB | 0.153, 0.092 | 0.113, 0.043 | yes (0.153 vs k_a = 0.17) |
+| iiwa, +2 kg at 10 s | NN | 0.0051, 0.0018 | 0.0010, 0.0003 | yes |
+| iiwa, +2 kg at 10 s | PD | 0.158, 0.121 | 0.112, 0.093 | **no** (z2) |
+
+This is the paper's claim on a real robot model. The NN controller learns the iiwa's unknown
+dynamics online and absorbs a 2 kg payload step with no visible effect. The model-based
+controller's error grows about 30× when its model becomes wrong, and it ends up close to the barrier.
+
+### Simulation pitfalls found (and fixed) in PyBullet
+
+The controller's (z2ᵀ)⁺ wᵀ a term has a gain of about M⁻¹/k_b². Any mismatch between the
+"measured" acceleration and the real one is amplified until the barrier breaks. Two PyBullet
+behaviours caused exactly that, and `tests/test_pybullet.py` guards against both:
+
+1. `calculateInverseDynamics` ignores URDF joint damping, but `stepSimulation` applies it. The
+   plant model now adds D·q̇.
+2. `calculateMassMatrix` / `calculateInverseDynamics` do not see `changeDynamics(mass=…)`. For links
+   without a collision shape, that call also silently resets the inertia to about 0 unless
+   `localInertiaDiagonal` is passed. The plant now rebuilds its truth model from a modified URDF and
+   keeps the inertia.
+
+Also note: load URDFs with `URDF_USE_INERTIA_FROM_FILE`. Without it PyBullet recomputes inertia from
+the collision shapes. And `calculateJacobian`'s `localPosition` is relative to the URDF link frame.

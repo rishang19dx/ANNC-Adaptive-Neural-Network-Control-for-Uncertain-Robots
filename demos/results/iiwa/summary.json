@@ -1,0 +1,82 @@
+{
+  "args": {
+    "robot": "iiwa",
+    "controller": "all",
+    "tf": 30.0,
+    "dt": 0.0005,
+    "gui": false,
+    "realtime": false,
+    "record": "demos/media/iiwa.mp4",
+    "payload": 2.0,
+    "payload_time": 10.0,
+    "q0_offset": [
+      0.0,
+      0.0
+    ],
+    "no_disturbance": false,
+    "seed": 0,
+    "out": null
+  },
+  "results": {
+    "MB": {
+      "max_abs_z1": [
+        0.1527,
+        0.0915
+      ],
+      "max_abs_z2": [
+        0.1102,
+        0.0995
+      ],
+      "rms_z1_after_5s": [
+        0.1131,
+        0.0432
+      ],
+      "max_abs_tau": [
+        63.4,
+        24.6
+      ],
+      "barrier_respected": true,
+      "t_end": 30.0
+    },
+    "NN": {
+      "max_abs_z1": [
+        0.0051,
+        0.0018
+      ],
+      "max_abs_z2": [
+        0.0479,
+        0.0255
+      ],
+      "rms_z1_after_5s": [
+        0.001,
+        0.0003
+      ],
+      "max_abs_tau": [
+        63.6,
+        26.5
+      ],
+      "barrier_respected": true,
+      "t_end": 30.0
+    },
+    "PD": {
+      "max_abs_z1": [
+        0.1583,
+        0.1214
+      ],
+      "max_abs_z2": [
+        0.4451,
+        0.307
+      ],
+      "rms_z1_after_5s": [
+        0.1121,
+        0.0928
+      ],
+      "max_abs_tau": [
+        63.5,
+        24.4
+      ],
+      "barrier_respected": false,
+      "t_end": 30.0
+    }
+  }
+}

@@ -68,8 +68,8 @@ class ModelBasedController:
         db, vb = _blf_den(kb, z2)
         P = row_pinv(z2)
         w = z2 / db                                       # z2i / (kb_i^2 - z2i^2)
-        r = self.robot
-        tau0 = (r.J(q).T @ f + r.C(q, dq) @ dq + r.G(q) + r.M(q) @ dalpha
+        r = self.robot      # any model exposing M(q) and bias(q, dq, f) = J^T f + C dq + G
+        tau0 = (r.bias(q, dq, f) + r.M(q) @ dalpha
                 - self.g.K2 * z2
                 - P * np.sum(z1 * z2 / da)
                 + P * (w @ dalpha))
